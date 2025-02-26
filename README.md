@@ -1,5 +1,3 @@
-
-
 ### **Environmental Monitoring and Obstacle Detection Rover**  
 
 #### **1. Overview**  
@@ -42,4 +40,79 @@ The dashboard offers an intuitive visualization of all data, enabling users to a
 - **Autonomous Navigation**: Enhance movement efficiency with obstacle detection.  
 - **Research & Development**: Study climatic conditions and air pollution patterns.  
 
-This rover, combined with its dashboard, serves as a comprehensive solution for environmental monitoring, making it suitable for research, industrial, and agricultural applications.
+#### **5. Code Explanation**  
+Below is a brief explanation of the core code components used in the rover project:
+
+**ESP32 Code for Data Collection & Transmission:**
+```cpp
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <DHT.h>
+#define DHTPIN 4  // Pin where DHT11 is connected
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+const char* ssid = "Your_SSID";
+const char* password = "Your_PASSWORD";
+const char* serverUrl = "http://your-server-url.com/data";
+
+void setup() {
+    Serial.begin(115200);
+    dht.begin();
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        Serial.println("Connecting to WiFi...");
+    }
+    Serial.println("Connected to WiFi");
+}
+
+void loop() {
+    float temperature = dht.readTemperature();
+    float humidity = dht.readHumidity();
+    if (isnan(temperature) || isnan(humidity)) {
+        Serial.println("Failed to read from DHT sensor!");
+        return;
+    }
+
+    HTTPClient http;
+    http.begin(serverUrl);
+    http.addHeader("Content-Type", "application/json");
+    String jsonPayload = "{\"temperature\":" + String(temperature) + ",\"humidity\":" + String(humidity) + "}";
+    int httpResponseCode = http.POST(jsonPayload);
+    Serial.println("Data sent: " + jsonPayload);
+    http.end();
+    delay(5000);
+}
+```
+
+**React.js Code for Dashboard Data Fetching:**
+```jsx
+import React, { useEffect, useState } from "react";
+
+const Dashboard = () => {
+    const [data, setData] = useState({ temperature: "--", humidity: "--" });
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const response = await fetch("http://your-server-url.com/data");
+            const result = await response.json();
+            setData(result);
+        };
+        fetchData();
+    }, []);
+
+    return (
+        <div>
+            <h2>Environmental Monitoring Dashboard</h2>
+            <p>Temperature: {data.temperature}°C</p>
+            <p>Humidity: {data.humidity}%</p>
+        </div>
+    );
+};
+
+export default Dashboard;
+```
+
+This rover, combined with its dashboard, serves as a comprehensive solution for environmental monitoring, making it suitable for research, industrial, and agricultural applications. 🚀
+
